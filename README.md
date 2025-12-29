@@ -14,7 +14,7 @@ Bump Detection: A second LED blinks when the robot detects a collision, providin
 
 Real-Time Control: Controlled through a Python GUI, with movement commands and a 180-degree radar scan.
 
-Purpose
+Purpose:
 
 The goal of CYtank was to convert the CyBot into a tank-style robot with autonomous navigation and target interaction. When the robot reaches the enemy base, it simulates a shooting action. Additionally, bump detection alerts the user with a blinking LED when the robot collides with obstacles.
 
