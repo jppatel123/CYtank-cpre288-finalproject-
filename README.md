@@ -1,4 +1,4 @@
-# 🤖 CyTank 
+# 🤖 CyTank — Bluetooth Combat Robot System
 
 ![Language](https://img.shields.io/badge/Language-C-00599C?style=for-the-badge&logo=c&logoColor=white)
 ![Platform](https://img.shields.io/badge/Platform-Tiva%20C%20TM4C123G-E34F26?style=for-the-badge&logoColor=white)
