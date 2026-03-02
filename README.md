@@ -12,54 +12,101 @@ A **full-stack autonomous combat robot system** — bare-metal C firmware on a T
 
 ## 📸 Gallery
 
-<p align="center">
-  <img src="images/cytank_3.jpg" width="80%" alt="CyTank on the combat field"/>
-  <br/>
-  <em>CyTank navigating the combat field with obstacle targets</em>
-</p>
+<div align="center">
+  <img src="images/cytank_3.jpg" width="75%" alt="CyTank on the combat field"/>
+  <p><em>CyTank navigating the combat field with obstacle targets</em></p>
+</div>
 
-<p align="center">
-  <img src="images/cytank_1.jpg" width="48%" alt="CyTank hardware closeup"/>
-  &nbsp;
-  <img src="images/cytank_2.jpg" width="48%" alt="PyQt5 GUI with radar scan"/>
-</p>
-<p align="center">
-  <em>Hardware setup (Tiva C + Arduino + breadboard on iRobot base)</em>
-  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-  <em>Live PyQt5 GUI — radar scan + test field position tracking</em>
-</p>
+<br/>
+
+<table align="center">
+  <tr>
+    <td align="center" width="50%">
+      <img src="images/cytank_1.jpg" width="100%" alt="CyTank hardware closeup"/>
+      <br/>
+      <em>Hardware — Tiva C + Arduino + breadboard on iRobot base</em>
+    </td>
+    <td align="center" width="50%">
+      <img src="images/cytank_2.jpg" width="100%" alt="PyQt5 GUI with radar scan"/>
+      <br/>
+      <em>Live PyQt5 GUI — radar scan + test field position tracking</em>
+    </td>
+  </tr>
+</table>
 
 ---
 
 ## 📋 Features
 
-- 🔭 **180° Radar Scanning** — servo-mounted IR sensor sweeps and detects objects with distance + angle
-- 🎮 **Bluetooth Manual Control** — W/A/S/D keyboard control over Bluetooth from the GUI
-- 🔫 **Laser Firing System** — KY-008 laser triggered from GUI shoot button via I2C
-- 📡 **Live Radar Display** — real-time radar visualization in the Python GUI
-- 🗺️ **IMU Position Tracking** — tracks robot's position and heading on a live test field map
-- ⚡ **Interrupt-Driven** — GPIO interrupts for responsive sensor reading and control
+- 🎮 **Bluetooth Manual Control** — W/A/S/D keyboard + buttons in GUI send commands to robot wirelessly
+- 🔭 **180° Radar Scanning** — press Scan in GUI → servo sweeps → live radar plot updates in real time
+- 🔫 **Laser Firing System** — press Shoot in GUI → Tiva C sends I2C command → Arduino fires KY-008 laser
+- 📡 **Live Radar Display** — detected objects shown with distance and angle on GUI radar plot
+- 🗺️ **IMU Position Tracking** — robot's real-time position and heading shown on test field map in GUI
+- ⚡ **Interrupt-Driven Firmware** — GPIO interrupts for fast, responsive sensor reading
 
 ---
 
 ## 🏗️ System Architecture
 
+Here is exactly how the system works — from user input to robot action:
+
 ```
-┌─────────────────────────────────────────────────────────┐
-│                    Python PyQt5 GUI                     │
-│        (Radar Display · W/A/S/D · Shoot Button)         │
-└──────────────────────┬──────────────────────────────────┘
-                       │ Bluetooth (UART)
-┌──────────────────────▼──────────────────────────────────┐
-│              Tiva C TM4C123G LaunchPad                  │
-│   UART · GPIO · Interrupts · Servo PWM · ADC · IMU      │
-└──────┬───────────────────────────────────┬──────────────┘
-       │ I2C                               │ iRobot UART
-┌──────▼──────────┐               ┌────────▼──────────────┐
-│  Arduino Uno    │               │  iRobot Create 2 Base │
-│  KY-008 Laser   │               │  Drive Motors · Sensor│
-└─────────────────┘               └───────────────────────┘
+╔══════════════════════════════════════════════╗
+║           Python PyQt5 GUI (Laptop)          ║
+║                                              ║
+║  User presses:                               ║
+║  [W] Forward  [A] Left  [S] Back  [D] Right  ║
+║  [Scan 180°]            [Shoot 🔫]           ║
+╚══════════════════╦═══════════════════════════╝
+                   ║
+                   ║  Bluetooth (UART)
+                   ║  GUI sends command string
+                   ║  e.g. "w", "a", "shoot", "scan"
+                   ▼
+╔══════════════════════════════════════════════╗
+║         Tiva C TM4C123G LaunchPad            ║
+║                                              ║
+║  Receives command via UART (Bluetooth)       ║
+║                                              ║
+║  IF move command (w/a/s/d):                  ║
+║    → Sends drive command to iRobot via UART  ║
+║                                              ║
+║  IF scan command:                            ║
+║    → Rotates servo motor (PWM)               ║
+║    → Reads IR sensor at each angle           ║
+║    → Sends distance + angle back to GUI      ║
+║                                              ║
+║  IF shoot command:                           ║
+║    → Sends I2C signal to Arduino             ║
+║                                              ║
+║  ALWAYS: Reads IMU data                      ║
+║    → Sends position + heading back to GUI    ║
+╚══════╦═══════════════════════╦═══════════════╝
+       ║                       ║
+       ║ UART                  ║ I2C
+       ▼                       ▼
+╔══════════════╗     ╔══════════════════════╗
+║ iRobot       ║     ║  Arduino Uno         ║
+║ Create 2     ║     ║                      ║
+║              ║     ║  Receives I2C signal ║
+║ Moves robot: ║     ║  → Fires KY-008      ║
+║ Forward      ║     ║    Laser Module 🔫   ║
+║ Backward     ║     ╚══════════════════════╝
+║ Turn Left    ║
+║ Turn Right   ║
+╚══════════════╝
 ```
+
+### Data Flow Summary
+
+| User Action | GUI Sends | Tiva C Does | Result |
+|---|---|---|---|
+| Press `W` | `"w"` over Bluetooth | UART → iRobot | Robot moves forward |
+| Press `A` | `"a"` over Bluetooth | UART → iRobot | Robot turns left |
+| Press `Scan` | `"scan"` over Bluetooth | Rotates servo + reads IR | Radar plot updates in GUI |
+| Press `Shoot` | `"shoot"` over Bluetooth | I2C → Arduino | Laser fires |
+| Always | — | Reads IMU | Position updates on GUI map |
 
 ---
 
@@ -76,7 +123,7 @@ A **full-stack autonomous combat robot system** — bare-metal C firmware on a T
 | Microcontroller | Tiva C Series TM4C123G LaunchPad |
 | Laser Control | Arduino Uno + KY-008 Laser Module |
 | GUI | Python PyQt5 |
-| Communication | UART (Bluetooth), I2C |
+| Wireless | Bluetooth Module (UART) |
 | Sensing | IR Sensor, HC-SR04 Ultrasonic, IMU |
 | Motion | Servo Motor (180° scan), DC Drive Motors |
 
@@ -84,12 +131,13 @@ A **full-stack autonomous combat robot system** — bare-metal C firmware on a T
 
 ## 📡 Communication Protocols
 
-| Protocol | Used For |
-|---|---|
-| **UART** | Tiva C ↔ iRobot base, Bluetooth ↔ GUI |
-| **I2C** | Tiva C → Arduino (laser trigger command) |
-| **PWM** | Servo motor control for radar scanning |
-| **GPIO + Interrupts** | Sensor reads, button inputs |
+| Protocol | Between | Purpose |
+|---|---|---|
+| **UART (Bluetooth)** | GUI ↔ Tiva C | Send commands from GUI, receive sensor data back |
+| **UART** | Tiva C ↔ iRobot base | Drive commands to move the robot |
+| **I2C** | Tiva C → Arduino | Trigger laser fire command |
+| **PWM** | Tiva C → Servo | Control servo angle for radar scanning |
+| **GPIO + Interrupts** | Tiva C ← Sensors | Fast sensor reads and button inputs |
 
 ---
 
@@ -98,8 +146,7 @@ A **full-stack autonomous combat robot system** — bare-metal C firmware on a T
 ### Hardware Required
 - CyBot Platform (iRobot Create 2 base)
 - Tiva C Series TM4C123G LaunchPad
-- Arduino Uno
-- KY-008 Laser Module
+- Arduino Uno + KY-008 Laser Module
 - IR Sensor + HC-SR04 Ultrasonic Sensor
 - Servo Motor + Bluetooth Module (HC-05)
 - LCD Board
@@ -121,43 +168,15 @@ python cytank_gui.py
 
 ---
 
-## 📁 Project Structure
-
-```
-CYtank-cpre288-finalproject/
-│
-├── firmware/
-│   ├── main.c               # Main firmware entry point
-│   ├── uart.c / uart.h      # UART communication
-│   ├── servo.c / servo.h    # Servo PWM control
-│   ├── sensor.c / sensor.h  # IR + Ultrasonic reads
-│   └── i2c.c / i2c.h        # I2C for Arduino laser
-│
-├── arduino/
-│   └── laser_control.ino    # Arduino I2C slave for laser
-│
-├── gui/
-│   └── cytank_gui.py        # Python PyQt5 GUI
-│
-├── images/
-│   ├── cytank_1.jpg         # Hardware closeup
-│   ├── cytank_2.jpg         # GUI screenshot
-│   └── cytank_3.jpg         # Robot on combat field
-│
-└── README.md
-```
-
----
-
 ## 💡 What I Learned
 
-- **Bare-metal firmware** development in C for ARM Cortex-M4
-- **UART communication** — sending/receiving structured data packets
-- **I2C master/slave** setup between two microcontrollers (Tiva C + Arduino)
+- **Bare-metal firmware** in C for ARM Cortex-M4 — no OS, direct hardware control
+- **UART communication** — sending and receiving structured command strings wirelessly
+- **I2C master/slave** — coordinating two microcontrollers (Tiva C + Arduino)
 - **PWM generation** for precise servo motor angle control
-- **Interrupt-driven programming** for real-time sensor response
-- **Python GUI development** with PyQt5 and serial communication
-- **System integration** — hardware + firmware + software working together end-to-end
+- **Interrupt-driven programming** for fast, real-time sensor response
+- **Python GUI** with PyQt5, serial communication, and live data visualization
+- **Full system integration** — GUI + firmware + hardware all working together
 
 ---
 
@@ -171,5 +190,4 @@ CYtank-cpre288-finalproject/
 ---
 
 ## 🏷️ Topics
-
 `embedded-systems` `robotics` `c` `uart` `i2c` `pwm` `tiva-c` `arduino` `python` `pyqt5` `bluetooth` `arm-cortex-m4` `cpre288`
