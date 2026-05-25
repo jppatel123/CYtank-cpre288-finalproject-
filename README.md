@@ -83,7 +83,10 @@ python cytank_gui.py
 
 ---
 
-## Author
+## Authors
 
 **Jay Patel**
-[LinkedIn](https://linkedin.com/in/jayprakashbhai-patel) · [GitHub](https://github.com/jppatel123) · jayppatel5078@gmail.com
+[GitHub](https://github.com/jppatel123) · jayppatel5078@gmail.com
+
+**Dhruv Patel**
+[GitHub](https://github.com/Dhruv-2801)
