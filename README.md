@@ -4,6 +4,17 @@ A combat robot system built for CPRE 288 at Iowa State University. Bare-metal C 
 
 ---
 
+<p>
+  <img src="images/cytank_3.jpg" width="100%" alt="CyTank on the combat field"/>
+</p>
+
+<p>
+  <img src="images/cytank_1.jpg" width="48%" alt="Hardware — Tiva C + Arduino + breadboard on iRobot base"/>
+  <img src="images/cytank_2.jpg" width="48%" alt="PyQt5 GUI — live radar scan and position tracking"/>
+</p>
+
+---
+
 ## What it does
 
 - **Bluetooth manual control** — W/A/S/D keyboard inputs in the GUI send drive commands to the robot wirelessly
